@@ -1,0 +1,9 @@
+/build/
+*.dmg
+*.app/
+.DS_Store
+/.gitviz.conf
+/gitviz-mygo
+.env
+.env.*
+!.env.example

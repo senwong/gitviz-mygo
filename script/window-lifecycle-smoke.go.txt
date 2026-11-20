@@ -1,0 +1,108 @@
+package main
+
+import (
+	"fmt"
+	"math"
+	"os"
+	"time"
+
+	"github.com/ebitengine/purego/objc"
+	"github.com/egoist/mygo"
+)
+
+// Run in an isolated process: exercise the native menu action for Cmd+W,
+// Dock reopen and Cmd+Q, without accessibility permissions or user preferences.
+func main() {
+	a := newApp(Preferences{Dark: true, Remotes: true})
+	a.prefsFile = ""
+	a.repos = []string{"/test/window-smoke"}
+	a.active = 0
+	a.snapshot.Tracking = Tracking{Branch: "release"}
+	a.rebuildVisible()
+	mygo.App.SetName("Gitviz Lifecycle Check")
+	a.installWindowLifecycle()
+	completed := false
+	mygo.App.OnQuit(func() {
+		if !a.quitting || !a.win.IsDestroyed() {
+			panic("native Quit did not close the window")
+		}
+		completed = true
+		fmt.Println("PASS: native Quit closes the hidden window and exits")
+	})
+	time.AfterFunc(15*time.Second, func() { fmt.Fprintln(os.Stderr, "FAIL: lifecycle check timed out"); os.Exit(1) })
+	mygo.App.WhenReady(func() {
+		a.createMainWindow()
+		a.installMenu()
+		go func() {
+			time.Sleep(400 * time.Millisecond)
+			a.win.Update(func() {
+				if title := a.win.Title(); title != "window-smoke · release — Gitviz" {
+					panic("incorrect initial window title: " + title)
+				}
+
+				nativeWindow := objc.ID(a.win.NativeHandle())
+				for _, name := range themeNames() {
+					a.prefs.Theme = name
+					a.setTheme()
+					if nativeWindow.Send(objc.RegisterName("titlebarAppearsTransparent")) == 0 {
+						panic("native title-bar material remained opaque")
+					}
+					background := nativeWindow.Send(objc.RegisterName("backgroundColor"))
+					components := []struct {
+						selector string
+						want     uint8
+					}{{"redComponent", a.uiTheme.Surface.R}, {"greenComponent", a.uiTheme.Surface.G}, {"blueComponent", a.uiTheme.Surface.B}}
+					for _, component := range components {
+						actual := objc.Send[float64](background, objc.RegisterName(component.selector))
+						if math.Abs(actual-float64(component.want)/255) > .005 {
+							panic("title-bar color differs from toolbar in " + name)
+						}
+					}
+				}
+				fmt.Println("PASS: native title-bar background matches toolbar for all 14 themes")
+				native := objc.ID(objc.GetClass("NSApplication")).Send(objc.RegisterName("sharedApplication"))
+				window := native.Send(objc.RegisterName("keyWindow"))
+				if window == 0 {
+					panic("native key window missing")
+				}
+
+				// Exercise the actual File > Close action bound to Cmd+W.
+				fileMenu := native.Send(objc.RegisterName("mainMenu")).Send(objc.RegisterName("itemAtIndex:"), 1).Send(objc.RegisterName("submenu"))
+				if fileMenu.Send(objc.RegisterName("numberOfItems")) != 6 {
+					panic("File menu shape changed; update native check")
+				}
+				a.prefs.InlineDetails = true
+				a.detailVisible = true
+				a.largeDiffVisible = true
+				a.revision = "native-diff"
+				a.files = []FileChange{{Path: "native.go", Status: "M"}}
+				a.selectedFile = 0
+				fileMenu.Send(objc.RegisterName("performActionForItemAtIndex:"), 5)
+				if a.isDiffView() || !a.win.IsVisible() || a.quitting {
+					panic("Cmd+W failed to return from diff to graph")
+				}
+				fmt.Println("PASS: native Cmd+W menu action returns from diff to graph")
+				fileMenu.Send(objc.RegisterName("performActionForItemAtIndex:"), 5)
+				if a.win.IsVisible() || a.win.IsDestroyed() || a.quitting {
+					panic("Cmd+W did not dismiss just the window")
+				}
+				fmt.Println("PASS: native Close hides the window without quitting")
+				a.snapshot.Tracking.Branch = "feature/ui"
+				a.updateWindowTitle()
+				native.Send(objc.RegisterName("delegate")).Send(objc.RegisterName("applicationShouldHandleReopen:hasVisibleWindows:"), native, false)
+				if !a.win.IsVisible() || a.win.Title() != "window-smoke · feature/ui — Gitviz" {
+					panic("Dock reopen lost window state or title")
+				}
+				fmt.Println("PASS: Dock reopen restores the window with its updated branch title")
+				window.Send(objc.RegisterName("performClose:"), objc.ID(0))
+				native.Send(objc.RegisterName("terminate:"), objc.ID(0))
+			})
+		}()
+	})
+	if err := mygo.App.Run(); err != nil {
+		panic(err)
+	}
+	if !completed {
+		panic("event loop ended without the quit callback")
+	}
+}

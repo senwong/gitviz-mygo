@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2=".8" y2="1"><stop offset="0" stop-color="#273144"/><stop offset="1" stop-color="#151c28"/></linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2=".5" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity=".04"/></linearGradient>
+  </defs>
+  <g transform="translate(61.44 61.44) scale(.88)">
+    <rect x="34" y="34" width="956" height="956" rx="220" fill="url(#surface)"/>
+    <rect x="36" y="36" width="952" height="952" rx="218" fill="none" stroke="url(#rim)" stroke-width="4"/>
+    <!-- Three compact rails; time runs upward. The left rail is the main branch. -->
+    <path d="M330 226V798" fill="none" stroke="#74b3ff" stroke-width="42" stroke-linecap="round"/>
+    <!-- A topic branch leaves the mainline and advances along the middle rail. -->
+    <path d="M506 226V646C506 714 330 668 330 736"
+          fill="none" stroke="#c0a0ff" stroke-width="38" stroke-linecap="round"/>
+    <!-- A newer branch remains open, with a short connector to its own rail. -->
+    <path d="M330 440C330 520 682 464 682 566V798"
+          fill="none" stroke="#50d9c0" stroke-width="38" stroke-linecap="round"/>
+    <g fill="#c0a0ff"><circle cx="506" cy="226" r="38"/><circle cx="506" cy="620" r="36"/></g>
+    <g fill="#50d9c0"><circle cx="682" cy="650" r="36"/><circle cx="682" cy="798" r="38"/></g>
+    <g fill="#74b3ff"><circle cx="330" cy="440" r="36"/><circle cx="330" cy="736" r="36"/></g>
+    <circle cx="330" cy="226" r="42" fill="#242e40" stroke="#a2ceff" stroke-width="12"/>
+    <circle cx="330" cy="226" r="15" fill="#e0efff"/>
+  </g>
+</svg>

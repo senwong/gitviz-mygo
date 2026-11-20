@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+output="${1:-build/theme-audit-$(date +%Y%m%d-%H%M%S)}"
+mkdir -p "$output"
+GITVIZ_THEME_AUDIT_DIR="$output" go test -run 'TestThemeScreenAudit|TestThemeContrastInventory|TestEveryThemeButtonStateAndSelectionContrast' -count=1 -v . 2>&1 | tee "$output/tests.log"
+swift script/audit-theme-sheets.swift "$output"
+printf 'Theme audit saved to %s\n' "$output"
