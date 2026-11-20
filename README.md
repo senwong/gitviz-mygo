@@ -1,65 +1,91 @@
-# Gitviz MyGo
+<p align="center"><img src="docs/assets/icon.svg" width="112" height="112" alt="Gitviz application icon"></p>
 
-使用 Go 和 [MyGo](https://github.com/egoist/mygo) 构建的原生桌面 Git 图形客户端。
+# Gitviz — Native Git Graph Viewer for macOS
 
-这是 Gitviz 的 Go 实现，与 [Rust 版](https://github.com/senwong/gitviz) 独立维护。
+A standalone macOS Git client for exploring commit history, branches and tags. Inspect a commit inside the graph, open a full-size code or image diff, and move between repositories without leaving your desktop.
 
-## 功能
+**[Website](https://senwong.github.io/gitviz-mygo/)** · **[Download for macOS](https://github.com/senwong/gitviz-mygo/releases/latest/download/Gitviz-macOS-universal.zip)** · **[Installation guide](https://senwong.github.io/gitviz-mygo/install/)** · **[中文说明](README.zh-CN.md)**
 
-- 多仓库切换、按名称搜索仓库，支持打开 VS Code `.code-workspace` 文件。
-- 提交关系图，展示本地分支、远程分支和 tag；支持提交与引用搜索高亮。
-- 行内提交详情与文件树，点击文件打开大幅 diff。
-- 文本 diff 搜索、多行选择与复制；图片修改前后预览。
-- 分支、提交和 tag 的右键操作。
-- 后台 Fetch、远程分支和 tag 更新检查，以及当前分支的 ahead/behind 状态。
-- 多套明暗主题、仓库设置、上次打开仓库恢复。
+![Gitviz showing a commit graph, colored branch lanes, branch labels and tags in a demo repository](docs/assets/gitviz-graph.png)
 
-## 构建与运行
+*Real application rendering with a synthetic demo repository. No private repository data is shown.*
 
-环境：macOS、Git、Go 1.27.3 或更新版本。MyGo 版本固定在 `go.mod` 中。
+## Why Gitviz?
+
+- **See the history.** Follow colored branch lanes, merge connections, local and remote branches, and tags.
+- **Stay in context.** Expand commit details and changed files inside the graph; open a file for a larger diff and return with ⌘W.
+- **Read the changes.** Search code diffs, select and copy across lines, or compare image versions side by side.
+- **Move between projects.** Search repositories by name and open VS Code `.code-workspace` files.
+- **Know what is local.** Inspect the current branch's ahead/behind counts and check remote branch and tag updates. Optional automatic Fetch refreshes refs when switching repositories; it does not pull or merge into your local branch.
+- **Make it comfortable.** Choose from light and dark themes, use visible keyboard shortcuts, and restore your last repository on launch.
+
+Gitviz runs as its own desktop application. It is inspired by the workflow of VS Code Git Graph, but is a separate project with its own implementation. The Go implementation in this repository uses [MyGo](https://github.com/egoist/mygo); the [Rust implementation](https://github.com/senwong/gitviz) is maintained separately.
+
+## Download and install
+
+Download the latest **[Gitviz for macOS](https://github.com/senwong/gitviz-mygo/releases/latest/download/Gitviz-macOS-universal.zip)**, unzip it, and drag `gitviz.app` to Applications.
+
+- macOS 13 or later; a universal application for **Apple Silicon and Intel**.
+- Git must be available on your system. If you do not have it, install Apple's Command Line Tools with `xcode-select --install`.
+- The current release is **ad-hoc signed and not notarized by Apple**. macOS may require you to allow it in **System Settings → Privacy & Security → Open Anyway** after the first launch attempt. See the [installation guide](https://senwong.github.io/gitviz-mygo/install/) for the complete steps.
+- Verify your download against the `SHA256SUMS.txt` attached to the same release.
+
+## Build from source
+
+Requirements: macOS, Git and Go 1.27.3 or later. MyGo is pinned in `go.mod`.
 
 ```sh
+git clone https://github.com/senwong/gitviz-mygo.git
+cd gitviz-mygo
 ./script/build
-
-# 打开仓库或工作区
 ./build/gitviz-mygo /path/to/repository
+# Or open a VS Code workspace:
 ./build/gitviz-mygo /path/to/project.code-workspace
 ```
 
-不传入路径时，恢复上次使用的仓库和工作区。
-
-## 验证
+Without a path, Gitviz restores the previous workspace and repository. Settings live in `~/.config/gitviz-mygo/`.
 
 ```sh
-# 格式检查、go vet、race 测试及构建
-./script/verify
+./script/verify   # Formatting, go vet, race tests, then build
+./script/package  # Locally signed app for the current architecture
+./script/release  # Universal macOS app ZIP and SHA-256 checksum
 ```
 
-部分真实仓库预览和完整主题截图检查需要显式设置测试环境变量；普通验证使用临时测试仓库。
+The race test suite includes native rendering and temporary Git repositories; runtime varies by machine. Some full theme and real-workspace screenshot checks are opt-in.
 
-## macOS 应用打包
+## Keyboard shortcuts
 
-```sh
-./script/package
-open build/gitviz.app
-```
-
-应用使用本机临时签名，产物位于 `build/`，不纳入版本管理。
-
-修改 `assets/AppIcon.svg` 后，可运行 `./script/icon` 重新生成图标；这一步需要 `rsvg-convert` 和 macOS 的 `iconutil`。
-
-## 常用快捷键
-
-| 快捷键 | 操作 |
+| Shortcut | Action |
 | --- | --- |
-| ⌘P | 仓库选择 |
-| ⌘⇧P | 命令面板 |
-| ⌘B | 分支选择 |
-| ⌘F | 搜索提交或当前文件 diff |
-| ⌘G / ⌘⇧G | 下一个 / 上一个匹配 |
-| ⌘R | 刷新 |
-| ⌘, | 设置 |
-| ⌘W | diff 中返回提交图；提交图中关闭窗口 |
-| ⌘Q | 退出应用 |
+| ⌘P | Choose a repository |
+| ⌘⇧P | Open the command palette |
+| ⌘B | Choose a branch filter |
+| ⌘F | Find in the graph or current text diff |
+| ⌘G / ⌘⇧G | Next / previous match |
+| ⌘R | Refresh the graph |
+| ⌘, | Open settings |
+| ⌘W | Return from a diff to the graph; otherwise close the window |
+| ⌘Q | Quit |
 
-设置保存在 `~/.config/gitviz-mygo/`。Fetch 更新远程引用和 tag，不会自动将远程提交合并进当前本地分支。
+## FAQ
+
+**Is Gitviz a VS Code extension?** No. It is a standalone native desktop application.
+
+**Does switching repositories pull code?** No. Automatic Fetch, when enabled, updates remote refs and tags. Pull and merge are separate actions.
+
+**Can it display binary image changes?** Yes. Supported raster images can be previewed from the selected Git revisions, with before/after views and a text-diff fallback.
+
+**Does it support Windows or Linux?** The downloadable release is currently for macOS. Other platforms are not distributed or verified by this project.
+
+**Does it replace Git?** No. Gitviz uses your installed Git executable and existing Git authentication.
+
+## Project links
+
+- [Features](https://senwong.github.io/gitviz-mygo/features/)
+- [Gitviz and VS Code Git Graph](https://senwong.github.io/gitviz-mygo/comparison/)
+- [Releases](https://github.com/senwong/gitviz-mygo/releases)
+- [Report an issue](https://github.com/senwong/gitviz-mygo/issues)
+
+The static website lives in `docs/`; run `python3 script/build-site.py` to regenerate its HTML.
+
+To regenerate app icons, run `./script/icon` with `rsvg-convert` and macOS `iconutil` installed. To reproduce the public demo screenshots, run `python3 script/capture-product-screenshots.py`; it uses a temporary repository and does not read your personal repositories or preferences.

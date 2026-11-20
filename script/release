@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+./script/package
+staging="$PWD/build/release"
+mkdir -p "$staging/amd64" "$staging/arm64"
+for arch in amd64 arm64; do
+    CGO_ENABLED=0 GOOS=darwin GOARCH="$arch" go build -trimpath -ldflags='-s -w' -o "$staging/$arch/gitviz-mygo" .
+done
+lipo -create "$staging/amd64/gitviz-mygo" "$staging/arm64/gitviz-mygo" -output build/gitviz.app/Contents/MacOS/gitviz-mygo
+codesign --force --deep --sign - build/gitviz.app
+codesign --verify --deep --strict build/gitviz.app
+lipo build/gitviz.app/Contents/MacOS/gitviz-mygo -verify_arch x86_64 arm64
+ditto -c -k --sequesterRsrc --keepParent build/gitviz.app "$staging/Gitviz-macOS-universal.zip"
+(cd "$staging" && shasum -a 256 Gitviz-macOS-universal.zip > SHA256SUMS.txt)
+printf '%s\n' "$staging/Gitviz-macOS-universal.zip" "$staging/SHA256SUMS.txt"

@@ -1,0 +1,53 @@
+package main
+
+import (
+ "context"
+ "image/png"
+ "log"
+ "os"
+ "path/filepath"
+ "strings"
+
+ "github.com/egoist/mygo/ui"
+)
+
+func main() {
+ repo, output := os.Args[1], os.Args[2]
+ a := newApp(Preferences{Dark:true, Theme:"One Dark Pro", Remotes:true, Detail:true, InlineDetails:true})
+ a.prefsFile=""
+ a.post=func(func()){}
+ a.repos=[]string{repo}
+ a.repoNames=map[string]string{repo:"gitviz-demo"}
+ a.active=0
+ a.configRepo=repo
+ a.config.FileTree=true
+ snapshot,err:=loadSnapshotConfig(context.Background(),repo,500,a.config,"")
+ if err!=nil {log.Fatal(err)}
+ a.snapshot=snapshot
+ a.rebuildVisible()
+ save:=func(name string){
+  tt:=ui.NewTester(a.view,1440,960)
+  tt.Frame()
+  f,err:=os.Create(filepath.Join(output,name+".png"));if err!=nil {log.Fatal(err)}
+  if err=png.Encode(f,tt.Image());err!=nil {log.Fatal(err)}
+  if err=f.Close();err!=nil {log.Fatal(err)}
+ }
+ a.selected=0
+ a.listSelected=0
+ a.selectedCommit=&a.snapshot.Commits[0]
+ a.revision=a.selectedCommit.SHA
+ a.detailVisible=false
+ save("gitviz-graph")
+ a.detailVisible=true
+ a.files,err=changedFiles(context.Background(),repo,a.revision)
+ if err!=nil {log.Fatal(err)}
+ a.rebuildFileRows()
+ save("gitviz-details")
+ a.largeDiffVisible=true
+ a.selectedFile=1
+ for i,row:=range a.fileRows { if row.File==a.selectedFile && !row.Dir {a.fileRowSelected=i} }
+ a.diffText,err=fileDiff(context.Background(),repo,a.revision,"",a.files[a.selectedFile])
+ if err!=nil {log.Fatal(err)}
+ a.diffLines=strings.Split(a.diffText,"\n")
+ save("gitviz-diff")
+}
